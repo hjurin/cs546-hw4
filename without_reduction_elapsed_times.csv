@@ -1,0 +1,22 @@
+schedule_type;chunk_size;iterations;avail_threads;mop_s_thread;time
+(null);(null);10;8;         303.34;        7.88
+(null);(null);10;8;         290.56;        8.22
+(null);(null);10;8;         301.66;        7.92
+(null);(null);10;8;         283.66;        8.42
+(null);(null);10;8;         270.33;        8.84
+(null);(null);10;8;         258.39;        9.25
+(null);(null);10;8;         274.27;        8.71
+(null);(null);10;8;         277.97;        8.59
+(null);(null);10;8;         277.64;        8.61
+(null);(null);10;8;         283.19;        8.44
+(null);(null);10;8;         259.72;        9.20
+(null);(null);10;8;         257.55;        9.28
+(null);(null);10;8;         269.47;        8.87
+(null);(null);10;8;         268.76;        8.89
+(null);(null);10;8;         278.14;        8.59
+(null);(null);10;8;         278.16;        8.59
+(null);(null);10;8;         270.86;        8.82
+(null);(null);10;8;         271.82;        8.79
+(null);(null);10;8;         253.81;        9.41
+(null);(null);10;8;         267.62;        8.93
+(null);(null);10;8;         191.28;       12.49

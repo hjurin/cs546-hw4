@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
     //    Shift the col index vals from actual (firstcol --> lastcol )
     //    to local, i.e., (0 --> lastcol-firstcol)
     //---------------------------------------------------------------------
-    #pragma omp for schedule(runtime)
+    #pragma omp for schedule(guided)
     for (j = 0; j < lastrow - firstrow + 1; j++) {
       for (k = rowstr[j]; k < rowstr[j+1]; k++) {
         colidx[k] = colidx[k] - firstcol;
@@ -459,7 +459,7 @@ static void conj_grad(int colidx[],
   //---------------------------------------------------------------------
   // Initialize the CG algorithm:
   //---------------------------------------------------------------------
-  #pragma omp for schedule(runtime)
+  #pragma omp for schedule(guided)
   for (j = 0; j < naa+1; j++) {
     q[j] = 0.0;
     z[j] = 0.0;
@@ -471,7 +471,7 @@ static void conj_grad(int colidx[],
   // rho = r.r
   // Now, obtain the norm of r: First, sum squares of r elements locally...
   //---------------------------------------------------------------------
-  #pragma omp for schedule(runtime) reduction(+:rho)
+  #pragma omp for schedule(guided) reduction(+:rho)
   for (j = 0; j < lastcol - firstcol + 1; j++) {
     rho = rho + r[j]*r[j];
   }
@@ -505,7 +505,7 @@ static void conj_grad(int colidx[],
     //       The unrolled-by-8 version below is significantly faster
     //       on the Cray t3d - overall speed of code is 1.5 times faster.
 
-    #pragma omp for schedule(runtime)
+    #pragma omp for schedule(guided)
     for (j = 0; j < lastrow - firstrow + 1; j++) {
       suml = 0.0;
       for (k = rowstr[j]; k < rowstr[j+1]; k++) {
@@ -517,7 +517,7 @@ static void conj_grad(int colidx[],
     //---------------------------------------------------------------------
     // Obtain p.q
     //---------------------------------------------------------------------
-    #pragma omp for schedule(runtime) reduction(+:d)
+    #pragma omp for schedule(guided) reduction(+:d)
     for (j = 0; j < lastcol - firstcol + 1; j++) {
       d = d + p[j]*q[j];
     }
@@ -531,7 +531,7 @@ static void conj_grad(int colidx[],
     // Obtain z = z + alpha*p
     // and    r = r - alpha*q
     //---------------------------------------------------------------------
-    #pragma omp for schedule(runtime) reduction(+:rho)
+    #pragma omp for schedule(guided) reduction(+:rho)
     for (j = 0; j < lastcol - firstcol + 1; j++) {
       z[j] = z[j] + alpha*p[j];
       r[j] = r[j] - alpha*q[j];
@@ -551,7 +551,7 @@ static void conj_grad(int colidx[],
     //---------------------------------------------------------------------
     // p = r + beta*p
     //---------------------------------------------------------------------
-    #pragma omp for schedule(runtime)
+    #pragma omp for schedule(guided)
     for (j = 0; j < lastcol - firstcol + 1; j++) {
       p[j] = r[j] + beta*p[j];
     }
@@ -562,7 +562,7 @@ static void conj_grad(int colidx[],
   // First, form A.z
   // The partition submatrix-vector multiply
   //---------------------------------------------------------------------
-  #pragma omp for schedule(runtime)
+  #pragma omp for schedule(guided)
   for (j = 0; j < lastrow - firstrow + 1; j++) {
     suml = 0.0;
     for (k = rowstr[j]; k < rowstr[j+1]; k++) {
@@ -574,7 +574,7 @@ static void conj_grad(int colidx[],
   //---------------------------------------------------------------------
   // At this point, r contains A.z
   //---------------------------------------------------------------------
-  #pragma omp for schedule(runtime) reduction(+:sum) nowait
+  #pragma omp for schedule(guided) reduction(+:sum) nowait
   for (j = 0; j < lastcol-firstcol+1; j++) {
     suml = x[j] - r[j];
     sum  = sum + suml*suml;
