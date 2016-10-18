@@ -1,0 +1,29 @@
+***********************************************
+* CS546 - Parallel and distributed processing *
+* Homework 4                                  *
+* Victor SAINT GUILHEM              A20385526 *
+***********************************************
+
+This repository contains all the source code for HW4.
+It also contains all tests and tests results.
+All files are described at the bottom of this README.
+
+# BUILD AND RUN
+
+Only use the given makefiles:
+make cg CLASS=C
+make mg CLASS=C
+
+# LAUNCH TESTS
+
+Tests should have the right execution rights, if not, just tap
+    chmod +x *.3
+These test simply launch the solution over different sized chunks (size 1000 to size 30000 with step 500)
+and store their result elapsed times in elapsed_times.csv. In order to do that, print_result() has been modified.
+
+# FILES
+
+* test_plotting.ipynb       Contains the jupyter-notebook for plotting elapsed times
+* genuine_elapsed_times.csv             
+* with_reduction_elapsed_times.csv     Used csv file. It will not be erased if you run tests.
+* without_reduction_elapsed_times.csv
