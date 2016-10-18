@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #ifdef _OPENMP
 #include <omp.h>
@@ -10,7 +11,7 @@
 void print_results(char *name, char class, int n1, int n2, int n3, int niter,
     double t, double mops, char *optype, logical verified, char *npbversion,
     char *compiletime, char *cs1, char *cs2, char *cs3, char *cs4, char *cs5,
-    char *cs6, char *cs7) 
+    char *cs6, char *cs7)
 {
   char size[16];
   int j;
@@ -43,7 +44,7 @@ void print_results(char *name, char class, int n1, int n2, int n3, int niter,
       sprintf( size, "%15.0lf", pow(2.0, n1) );
       j = 14;
       if ( size[j] == '.' ) {
-        size[j] = ' '; 
+        size[j] = ' ';
         j--;
       }
       size[j+1] = '\0';
@@ -67,13 +68,13 @@ void print_results(char *name, char class, int n1, int n2, int n3, int niter,
   printf( " Mop/s/thread    =          %15.2lf\n", mops/(double)num_threads );
 
   printf( " Operation type  = %24s\n", optype );
-  if ( verified ) 
+  if ( verified )
     printf( " Verification    =             %12s\n", "SUCCESSFUL" );
   else
     printf( " Verification    =             %12s\n", "UNSUCCESSFUL" );
   printf( " Version         =             %12s\n", npbversion );
   printf( " Compile date    =             %12s\n", compiletime );
-  
+
   printf( "\n Compile options:\n"
           "    CC           = %s\n", cs1 );
   printf( "    CLINK        = %s\n", cs2 );
@@ -89,5 +90,20 @@ void print_results(char *name, char class, int n1, int n2, int n3, int niter,
           " cmp@aces.snu.ac.kr\n"
           " http://aces.snu.ac.kr\n"
           "--------------------------------------\n\n");
-}
 
+  // echo elapsed time in a csv file
+  char time_file[20] = "elapsed_times.csv";
+  FILE * file = fopen(time_file, "r");
+  // if the file doesn't exist we create it with headers
+  if (file == NULL) {
+      file = fopen(time_file, "a");
+      fprintf(file, "schedule_type;chunk_size;iterations;avail_threads;mop_s_thread;time\n");
+  }
+  file = fopen(time_file, "a");
+  fprintf(file, "%s;%s;%d;%d;%15.2lf;%12.2lf\n", getenv("SCHEDULE_TYPE"),
+                                                 getenv("CHUNK_SIZE"),
+                                                 niter,
+                                                 max_threads,
+                                                 mops/(double)num_threads,
+                                                 t);
+}

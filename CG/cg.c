@@ -220,12 +220,12 @@ int main(int argc, char *argv[])
     zeta    = randlc(&tran, amult);
 
     //---------------------------------------------------------------------
-    //  
+    //
     //---------------------------------------------------------------------
-    makea(naa, nzz, a, colidx, rowstr, 
-          firstrow, lastrow, firstcol, lastcol, 
-          arow, 
-          (int (*)[NONZER+1])(void*)acol, 
+    makea(naa, nzz, a, colidx, rowstr,
+          firstrow, lastrow, firstcol, lastcol,
+          arow,
+          (int (*)[NONZER+1])(void*)acol,
           (double (*)[NONZER+1])(void*)aelt,
           v, iv);
 
@@ -236,10 +236,10 @@ int main(int argc, char *argv[])
     //    values of j used in indexing rowstr go from 0 --> lastrow-firstrow
     //    values of colidx which are col indexes go from firstcol --> lastcol
     //    So:
-    //    Shift the col index vals from actual (firstcol --> lastcol ) 
+    //    Shift the col index vals from actual (firstcol --> lastcol )
     //    to local, i.e., (0 --> lastcol-firstcol)
     //---------------------------------------------------------------------
-    #pragma omp for
+    #pragma omp for schedule(runtime)
     for (j = 0; j < lastrow - firstrow + 1; j++) {
       for (k = rowstr[j]; k < rowstr[j+1]; k++) {
         colidx[k] = colidx[k] - firstcol;
@@ -296,7 +296,7 @@ int main(int argc, char *argv[])
     // Normalize z to obtain x
     //---------------------------------------------------------------------
     #pragma omp parallel for default(shared) private(j)
-    for (j = 0; j < lastcol - firstcol + 1; j++) {     
+    for (j = 0; j < lastcol - firstcol + 1; j++) {
       x[j] = norm_temp2 * z[j];
     }
   } // end of do one iteration untimed
@@ -349,7 +349,7 @@ int main(int argc, char *argv[])
     norm_temp2 = 1.0 / sqrt(norm_temp2);
 
     zeta = SHIFT + 1.0 / norm_temp1;
-    if (it == 1) 
+    if (it == 1)
       printf("\n   iteration           ||r||                 zeta\n");
     printf("    %5d       %20.14E%20.13f\n", it, rnorm, zeta);
 
@@ -403,7 +403,7 @@ int main(int argc, char *argv[])
 
   print_results("CG", Class, NA, 0, 0,
                 NITER, t,
-                mflops, "          floating point", 
+                mflops, "          floating point",
                 verified, NPBVERSION, COMPILETIME,
                 CS1, CS2, CS3, CS4, CS5, CS6, CS7);
 
@@ -433,7 +433,7 @@ int main(int argc, char *argv[])
 
 
 //---------------------------------------------------------------------
-// Floaging point arrays here are named as in NPB1 spec discussion of 
+// Floaging point arrays here are named as in NPB1 spec discussion of
 // CG algorithm
 //---------------------------------------------------------------------
 static void conj_grad(int colidx[],
@@ -459,7 +459,7 @@ static void conj_grad(int colidx[],
   //---------------------------------------------------------------------
   // Initialize the CG algorithm:
   //---------------------------------------------------------------------
-  #pragma omp for
+  #pragma omp for schedule(runtime)
   for (j = 0; j < naa+1; j++) {
     q[j] = 0.0;
     z[j] = 0.0;
@@ -471,7 +471,7 @@ static void conj_grad(int colidx[],
   // rho = r.r
   // Now, obtain the norm of r: First, sum squares of r elements locally...
   //---------------------------------------------------------------------
-  #pragma omp for reduction(+:rho)
+  #pragma omp for schedule(runtime) reduction(+:rho)
   for (j = 0; j < lastcol - firstcol + 1; j++) {
     rho = rho + r[j]*r[j];
   }
@@ -498,14 +498,14 @@ static void conj_grad(int colidx[],
     // The partition submatrix-vector multiply: use workspace w
     //---------------------------------------------------------------------
     //
-    // NOTE: this version of the multiply is actually (slightly: maybe %5) 
-    //       faster on the sp2 on 16 nodes than is the unrolled-by-2 version 
-    //       below.   On the Cray t3d, the reverse is true, i.e., the 
-    //       unrolled-by-two version is some 10% faster.  
+    // NOTE: this version of the multiply is actually (slightly: maybe %5)
+    //       faster on the sp2 on 16 nodes than is the unrolled-by-2 version
+    //       below.   On the Cray t3d, the reverse is true, i.e., the
+    //       unrolled-by-two version is some 10% faster.
     //       The unrolled-by-8 version below is significantly faster
     //       on the Cray t3d - overall speed of code is 1.5 times faster.
 
-    #pragma omp for
+    #pragma omp for schedule(runtime)
     for (j = 0; j < lastrow - firstrow + 1; j++) {
       suml = 0.0;
       for (k = rowstr[j]; k < rowstr[j+1]; k++) {
@@ -514,48 +514,10 @@ static void conj_grad(int colidx[],
       q[j] = suml;
     }
 
-    /*
-    for (j = 0; j < lastrow - firstrow + 1; j++) {
-      int i = rowstr[j];
-      int iresidue = (rowstr[j+1] - i) % 2;
-      double sum1 = 0.0;
-      double sum2 = 0.0;
-      if (iresidue == 1)
-        sum1 = sum1 + a[i]*p[colidx[i]];
-      for (k = i + iresidue; k <= rowstr[j+1] - 2; k += 2) {
-        sum1 = sum1 + a[k]  *p[colidx[k]];
-        sum2 = sum2 + a[k+1]*p[colidx[k+1]];
-      }
-      q[j] = sum1 + sum2;
-    }
-    */
-
-    /*
-    for (j = 0; j < lastrow - firstrow + 1; j++) {
-      int i = rowstr[j]; 
-      int iresidue = (rowstr[j+1] - i) % 8;
-      suml = 0.0;
-      for (k = i; k <= i + iresidue - 1; k++) {
-        suml = suml + a[k]*p[colidx[k]];
-      }
-      for (k = i + iresidue; k <= rowstr[j+1] - 8; k += 8) {
-        suml = suml + a[k  ]*p[colidx[k  ]]
-                  + a[k+1]*p[colidx[k+1]]
-                  + a[k+2]*p[colidx[k+2]]
-                  + a[k+3]*p[colidx[k+3]]
-                  + a[k+4]*p[colidx[k+4]]
-                  + a[k+5]*p[colidx[k+5]]
-                  + a[k+6]*p[colidx[k+6]]
-                  + a[k+7]*p[colidx[k+7]];
-      }
-      q[j] = suml;
-    }
-    */
-
     //---------------------------------------------------------------------
     // Obtain p.q
     //---------------------------------------------------------------------
-    #pragma omp for reduction(+:d)
+    #pragma omp for schedule(runtime) reduction(+:d)
     for (j = 0; j < lastcol - firstcol + 1; j++) {
       d = d + p[j]*q[j];
     }
@@ -569,11 +531,11 @@ static void conj_grad(int colidx[],
     // Obtain z = z + alpha*p
     // and    r = r - alpha*q
     //---------------------------------------------------------------------
-    #pragma omp for reduction(+:rho)
+    #pragma omp for schedule(runtime) reduction(+:rho)
     for (j = 0; j < lastcol - firstcol + 1; j++) {
       z[j] = z[j] + alpha*p[j];
       r[j] = r[j] - alpha*q[j];
-            
+
       //---------------------------------------------------------------------
       // rho = r.r
       // Now, obtain the norm of r: First, sum squares of r elements locally..
@@ -589,7 +551,7 @@ static void conj_grad(int colidx[],
     //---------------------------------------------------------------------
     // p = r + beta*p
     //---------------------------------------------------------------------
-    #pragma omp for
+    #pragma omp for schedule(runtime)
     for (j = 0; j < lastcol - firstcol + 1; j++) {
       p[j] = r[j] + beta*p[j];
     }
@@ -600,7 +562,7 @@ static void conj_grad(int colidx[],
   // First, form A.z
   // The partition submatrix-vector multiply
   //---------------------------------------------------------------------
-  #pragma omp for
+  #pragma omp for schedule(runtime)
   for (j = 0; j < lastrow - firstrow + 1; j++) {
     suml = 0.0;
     for (k = rowstr[j]; k < rowstr[j+1]; k++) {
@@ -612,7 +574,7 @@ static void conj_grad(int colidx[],
   //---------------------------------------------------------------------
   // At this point, r contains A.z
   //---------------------------------------------------------------------
-  #pragma omp for reduction(+:sum) nowait
+  #pragma omp for schedule(runtime) reduction(+:sum) nowait
   for (j = 0; j < lastcol-firstcol+1; j++) {
     suml = x[j] - r[j];
     sum  = sum + suml*suml;
@@ -670,7 +632,7 @@ static void makea(int n,
   //---------------------------------------------------------------------
   // nonzer is approximately  (int(sqrt(nnza /n)));
   //---------------------------------------------------------------------
-  int work; 
+  int work;
 
   //---------------------------------------------------------------------
   // nn1 is the smallest power of two not less than n
@@ -696,7 +658,7 @@ static void makea(int n,
   ilow  = work * myid;
   ihigh = ilow + work;
   if (ihigh > n) ihigh = n;
-  
+
   for (iouter = 0; iouter < ihigh; iouter++) {
     nzv = NONZER;
     sprnvc(n, nzv, nn1, vc, ivc);
@@ -716,7 +678,7 @@ static void makea(int n,
   // ... make the sparse matrix from list of elements with duplicates
   //     (v and iv are used as  workspace)
   //---------------------------------------------------------------------
-  sparse(a, colidx, rowstr, n, nz, NONZER, arow, acol, 
+  sparse(a, colidx, rowstr, n, nz, NONZER, arow, acol,
          aelt, firstrow, lastrow, last_n,
          v, &iv[0], &iv[nz], RCOND, SHIFT);
 }
@@ -1000,6 +962,7 @@ static void vecset(int n, double v[], int iv[], int *nzv, int i, double val)
   logical set;
 
   set = false;
+
   for (k = 0; k < *nzv; k++) {
     if (iv[k] == i) {
       v[k] = val;
@@ -1012,4 +975,3 @@ static void vecset(int n, double v[], int iv[], int *nzv, int i, double val)
     *nzv     = *nzv + 1;
   }
 }
-
